@@ -1,4 +1,4 @@
-module github.com/ksubedi/gomove
+module github.com/jbsmith7741/gomove
 
 go 1.13
 
