@@ -85,16 +85,19 @@ func main() {
 func ScanDir(dir string, lookup map[string]string, c *cli.Context) {
 	// construct the path of the vendor dir of the project for prefix matching
 	vendorDir := path.Join(dir, "vendor")
+	gitDir := path.Join(dir, ".git")
 	// Scan directory for files
 	filepath.Walk(dir, func(filePath string, info os.FileInfo, err error) error {
-		// ignore vendor path
-		if matched := strings.HasPrefix(filePath, vendorDir); matched {
+		// ignore vendor path and .git folder
+		if info.IsDir() && (strings.HasPrefix(filePath, vendorDir) || strings.HasPrefix(filePath, gitDir)) {
+			log.Println("skip dir ", filePath)
+			return filepath.SkipDir
+		}
+
+		if info.IsDir() {
 			return nil
 		}
-		// skip directories and .git folder
-		if info.IsDir() || strings.Contains(filePath, "/.git/") {
-			return nil
-		}
+
 		// skip executable files
 		if info.Mode()&0111 != 0 {
 			fmt.Printf("Skip executable %v %b\n", filePath, info.Mode())
@@ -103,22 +106,12 @@ func ScanDir(dir string, lookup map[string]string, c *cli.Context) {
 
 		// delete checksum values in go.sum file
 		if info.Name() == "go.sum" {
-
 			if v, err := replaceFile(filePath, true, lookup); err != nil {
 				log.Println(err)
 			} else if len(v) > 0 {
 				fmt.Println(red+"deleting checksums in ", blackOnWhite, filePath, reset)
 				fmt.Println(red, v, reset)
 			}
-
-		}
-		// Only process go files
-		if path.Ext(filePath) == ".go" {
-			fmt.Println(blackOnWhite+"Processing file", filePath, reset)
-			for from, to := range lookup {
-				ProcessFile(filePath, from, to, c)
-			}
-			return nil
 		}
 
 		v, err := replaceFile(filePath, false, lookup)

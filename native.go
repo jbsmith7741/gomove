@@ -47,7 +47,6 @@ func ProcessFileNative(filePath string, from string, to string) {
 
 	// Scan through the lines of go file
 	for scanner.Scan() {
-
 		scanLine++
 		line := scanner.Text()
 		bareLine := strings.Replace(line, " ", "", -1)
